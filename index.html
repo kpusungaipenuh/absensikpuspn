@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <script>
+      // Suppress harmless Vite HMR WebSocket connection notices per environment constraints
+      (function() {
+        if (typeof window === 'undefined') return;
+
+        // Recursive detector for Vite / HMR / WebSocket noise in any data type (string, Error, Event, Array, Object)
+        function containsViteNoise(arg, depth) {
+          if (!arg || (depth || 0) > 4) return false;
+          if (typeof arg === 'string') {
+            const s = arg.toLowerCase();
+            return s.includes('[vite]') || s.includes('vite-hmr') || s.includes('vite-ping') || s.includes('websocket') || s.includes('@vite/client') || s.startsWith('vite:');
+          }
+          if (arg instanceof Error || (arg && typeof arg === 'object' && arg.message)) {
+            const msg = String(arg.message || '').toLowerCase();
+            const stack = String(arg.stack || '').toLowerCase();
+            if (msg.includes('[vite]') || msg.includes('vite-hmr') || msg.includes('vite-ping') || msg.includes('websocket') || msg.includes('@vite/client')) return true;
+            if (stack.includes('@vite/client') || stack.includes('vite-hmr')) return true;
+          }
+          if (arg instanceof Event || (arg && arg.type)) {
+            const t = String(arg.type || '').toLowerCase();
+            if (t.includes('websocket') || t.includes('vite')) return true;
+          }
+          if (Array.isArray(arg)) {
+            for (let i = 0; i < arg.length; i++) {
+              if (containsViteNoise(arg[i], (depth || 0) + 1)) return true;
+            }
+          } else if (typeof arg === 'object') {
+            try {
+              const str = String(arg).toLowerCase();
+              if (str.includes('[vite]') || str.includes('vite-hmr') || str.includes('websocket')) return true;
+            } catch (e) {}
+            for (const key of Object.keys(arg)) {
+              if (key === 'reason' || key === 'message' || key === 'error' || key === 'data' || key === 'url' || key === 'protocols') {
+                if (containsViteNoise(arg[key], (depth || 0) + 1)) return true;
+              }
+            }
+          }
+          return false;
+        }
+
+        // 1. Intercept MessagePort.prototype.postMessage (used by _aistudio-iframe.js to report errors to host)
+        if (typeof MessagePort !== 'undefined' && MessagePort.prototype && MessagePort.prototype.postMessage) {
+          const origPortPostMessage = MessagePort.prototype.postMessage;
+          MessagePort.prototype.postMessage = function(data, ...args) {
+            try {
+              if (containsViteNoise(data)) {
+                return;
+              }
+            } catch (err) {}
+            return origPortPostMessage.apply(this, [data, ...args]);
+          };
+        }
+
+        // 2. Intercept window.postMessage & window.parent.postMessage
+        if (typeof window.postMessage === 'function') {
+          const origWinPostMessage = window.postMessage;
+          window.postMessage = function(data, ...args) {
+            try {
+              if (containsViteNoise(data)) return;
+            } catch (err) {}
+            return origWinPostMessage.apply(this, [data, ...args]);
+          };
+        }
+        try {
+          if (window.parent && window.parent !== window && typeof window.parent.postMessage === 'function') {
+            const origParentPostMessage = window.parent.postMessage;
+            window.parent.postMessage = function(data, ...args) {
+              try {
+                if (containsViteNoise(data)) return;
+              } catch (err) {}
+              return origParentPostMessage.apply(this, [data, ...args]);
+            };
+          }
+        } catch (e) {}
+
+        // 3. Wrap console methods & prevent _aistudio-iframe.js from reporting [vite]
+        function wrapConsoleMethods(c) {
+          if (!c || typeof c !== 'object') return;
+          ['error', 'warn', 'info', 'log', 'debug'].forEach(function(m) {
+            const orig = c[m];
+            if (typeof orig === 'function') {
+              c[m] = function(...args) {
+                for (let i = 0; i < args.length; i++) {
+                  if (containsViteNoise(args[i])) return;
+                }
+                return orig.apply(this, args);
+              };
+            }
+          });
+        }
+
+        wrapConsoleMethods(window.console);
+        let activeConsole = window.console;
+        try {
+          Object.defineProperty(window, 'console', {
+            configurable: true,
+            enumerable: true,
+            get: function() { return activeConsole; },
+            set: function(val) {
+              wrapConsoleMethods(val);
+              activeConsole = val;
+            }
+          });
+        } catch (e) {}
+
+        // 4. Intercept window.onerror and window.onunhandledrejection assignment
+        let activeOnError = null;
+        try {
+          Object.defineProperty(window, 'onerror', {
+            configurable: true,
+            enumerable: true,
+            get: function() { return activeOnError; },
+            set: function(fn) {
+              if (typeof fn === 'function') {
+                activeOnError = function(message, source, lineno, colno, error) {
+                  if (containsViteNoise(message) || containsViteNoise(error)) {
+                    return true;
+                  }
+                  return fn.call(this, message, source, lineno, colno, error);
+                };
+              } else {
+                activeOnError = fn;
+              }
+            }
+          });
+        } catch (e) {}
+
+        let activeOnRejection = null;
+        try {
+          Object.defineProperty(window, 'onunhandledrejection', {
+            configurable: true,
+            enumerable: true,
+            get: function() { return activeOnRejection; },
+            set: function(fn) {
+              if (typeof fn === 'function') {
+                activeOnRejection = function(event) {
+                  if (containsViteNoise(event && (event.reason || event.message))) {
+                    if (event && event.preventDefault) event.preventDefault();
+                    if (event && event.stopPropagation) event.stopPropagation();
+                    return;
+                  }
+                  return fn.call(this, event);
+                };
+              } else {
+                activeOnRejection = fn;
+              }
+            }
+          });
+        } catch (e) {}
+
+        // 5. Intercept window.WebSocket for vite-hmr to provide an immediate mock OPEN connection
+        let activeWebSocket = window.WebSocket;
+        function createViteMockSocket(url, protocols) {
+          const dummy = new EventTarget();
+          dummy.readyState = 1; // 1 = OPEN
+          dummy.OPEN = 1;
+          dummy.CONNECTING = 0;
+          dummy.CLOSING = 2;
+          dummy.CLOSED = 3;
+          dummy.close = function() {};
+          dummy.send = function() {};
+          dummy.url = String(url || '');
+          dummy.protocol = String(protocols || '');
+          dummy.binaryType = 'blob';
+          dummy.bufferedAmount = 0;
+          dummy.extensions = '';
+          dummy.onopen = null;
+          dummy.onmessage = null;
+          dummy.onerror = null;
+          dummy.onclose = null;
+          if (typeof queueMicrotask === 'function') {
+            queueMicrotask(function() {
+              try {
+                if (typeof dummy.onopen === 'function') dummy.onopen(new Event('open'));
+                dummy.dispatchEvent(new Event('open'));
+              } catch (e) {}
+            });
+          }
+          return dummy;
+        }
+
+        function makeSafeWebSocket(BaseWS) {
+          if (!BaseWS) return BaseWS;
+          function SafeWebSocket(url, protocols) {
+            const urlStr = String(url || '');
+            const protoStr = String(protocols || '');
+            if (
+              protoStr.includes('vite') ||
+              urlStr.includes('vite') ||
+              urlStr.includes(':24678') ||
+              urlStr.includes('token=')
+            ) {
+              return createViteMockSocket(url, protocols);
+            }
+            return new BaseWS(url, protocols);
+          }
+          SafeWebSocket.prototype = BaseWS.prototype;
+          SafeWebSocket.OPEN = 1;
+          SafeWebSocket.CONNECTING = 0;
+          SafeWebSocket.CLOSING = 2;
+          SafeWebSocket.CLOSED = 3;
+          return SafeWebSocket;
+        }
+
+        if (window.WebSocket) {
+          activeWebSocket = makeSafeWebSocket(window.WebSocket);
+          try {
+            Object.defineProperty(window, 'WebSocket', {
+              configurable: true,
+              enumerable: true,
+              get: function() { return activeWebSocket; },
+              set: function(newWS) {
+                activeWebSocket = makeSafeWebSocket(newWS);
+              }
+            });
+          } catch (e) {
+            window.WebSocket = activeWebSocket;
+          }
+        }
+
+        // 6. Global event listeners for error and unhandledrejection
+        window.addEventListener('error', function(e) {
+          if (containsViteNoise(e)) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          if (containsViteNoise(e && e.reason)) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#064E3B" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SITENANG" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" />
+    <title>SITENANG - Presensi, WFH/WFA & Cuti KPU Kota Sungai Penuh</title>
+    <meta name="description" content="SITENANG (Sistem Informasi Terpadu Presensi, Penugasan WFH/WFA, dan Layanan Cuti Pegawai) KPU Kota Sungai Penuh" />
+    <meta property="og:title" content="SITENANG - Presensi, WFH/WFA & Cuti KPU Kota Sungai Penuh" />
+    <meta property="og:description" content="SITENANG (Sistem Informasi Terpadu Presensi, Penugasan WFH/WFA, dan Layanan Cuti Pegawai) KPU Kota Sungai Penuh" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased font-sans">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

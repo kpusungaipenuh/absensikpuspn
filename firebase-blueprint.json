@@ -1,0 +1,195 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account for admin or employee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "pegawai"] },
+        "employee_id": { "type": "string" },
+        "is_active": { "type": "number" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "username", "email", "role"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Employee record data in KPU Kota Sungai Penuh",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nip": { "type": "string" },
+        "nip_nik": { "type": "string" },
+        "nip_nipppk": { "type": "string" },
+        "nama_lengkap": { "type": "string" },
+        "tempat_lahir": { "type": "string" },
+        "tanggal_lahir": { "type": "string" },
+        "pangkat_golongan": { "type": "string" },
+        "sub_bagian": { "type": "string" },
+        "jabatan": { "type": "string" },
+        "unit_kerja": { "type": "string" },
+        "golongan": { "type": "string" },
+        "no_telepon": { "type": "string" },
+        "nomor_hp": { "type": "string" },
+        "email": { "type": "string" },
+        "alamat": { "type": "string" },
+        "metode_kerja_default": { "type": "string", "enum": ["WFO", "WFH", "WFA"] },
+        "is_active": { "type": "number" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "nama_lengkap", "jabatan"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance record with GPS & selfie verification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "waktu_masuk": { "type": "string" },
+        "waktu_pulang": { "type": "string" },
+        "metode_kerja": { "type": "string", "enum": ["WFO", "WFH", "WFA"] },
+        "status": { "type": "string", "enum": ["hadir", "terlambat", "cuti", "alpa"] },
+        "lat_masuk": { "type": "number" },
+        "lng_masuk": { "type": "number" },
+        "jarak_masuk_meter": { "type": "number" },
+        "foto_masuk": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "employee_id", "tanggal", "waktu_masuk", "status"]
+    },
+    "LeaveRequest": {
+      "title": "LeaveRequest",
+      "description": "Employee leave request record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nomor_pengajuan": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "jenis_cuti_id": { "type": "string" },
+        "tanggal_mulai": { "type": "string" },
+        "tanggal_selesai": { "type": "string" },
+        "jumlah_hari": { "type": "number" },
+        "alasan": { "type": "string" },
+        "status": { "type": "string", "enum": ["menunggu", "disetujui", "ditolak", "dibatalkan"] },
+        "catatan_penolakan": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "nomor_pengajuan", "employee_id", "jenis_cuti_id", "tanggal_mulai", "tanggal_selesai", "jumlah_hari", "status"]
+    },
+    "LeaveBalance": {
+      "title": "LeaveBalance",
+      "description": "Annual leave quota tracking across N-2, N-1, and N",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "tahun": { "type": "number" },
+        "saldo_n2": { "type": "number" },
+        "saldo_n1": { "type": "number" },
+        "saldo_n": { "type": "number" },
+        "total_tersedia": { "type": "number" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["id", "employee_id", "tahun"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "is_read": { "type": "number" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "title", "message"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "System settings like office coordinates, radius, and hours",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "key": { "type": "string" },
+        "value": { "type": "string" },
+        "description": { "type": "string" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["id", "key", "value"]
+    },
+    "FcmToken": {
+      "title": "FcmToken",
+      "description": "FCM device registration tokens for push notifications",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "employee_id": { "type": "string" },
+        "token": { "type": "string" },
+        "platform": { "type": "string" },
+        "is_active": { "type": "boolean" },
+        "updated_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "token"]
+    },
+    "BiometricCredential": {
+      "title": "BiometricCredential",
+      "description": "Registered biometric credentials for WebAuthn login",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "credential_id": { "type": "string" },
+        "device_name": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "credential_id"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of user accounts"
+    },
+    "/employees/{employeeId}": {
+      "schema": { "$ref": "#/entities/Employee" },
+      "description": "Collection of employee profiles"
+    },
+    "/attendances/{attendanceId}": {
+      "schema": { "$ref": "#/entities/Attendance" },
+      "description": "Collection of attendance logs"
+    },
+    "/leave_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/LeaveRequest" },
+      "description": "Collection of leave requests"
+    },
+    "/leave_balances/{balanceId}": {
+      "schema": { "$ref": "#/entities/LeaveBalance" },
+      "description": "Collection of annual leave balances"
+    },
+    "/notifications/{notifId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Collection of user notifications"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Setting" },
+      "description": "Application settings and office configurations"
+    },
+    "/fcm_tokens/{tokenId}": {
+      "schema": { "$ref": "#/entities/FcmToken" },
+      "description": "Collection of FCM device tokens for real-time push notifications"
+    },
+    "/biometric_credentials/{credId}": {
+      "schema": { "$ref": "#/entities/BiometricCredential" },
+      "description": "Collection of employee biometric credentials"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "SITENANG - Presensi, WFH/WFA & Cuti KPU Kota Sungai Penuh",
+  "description": "SITENANG (Sistem Informasi Terpadu Presensi, Penugasan WFH/WFA, dan Layanan Cuti Pegawai) KPU Kota Sungai Penuh",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

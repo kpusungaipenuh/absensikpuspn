@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064E3B" />
+      <stop offset="50%" stop-color="#0D766E" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#CA8A04" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <!-- Outer Ring Accent -->
+  <circle cx="256" cy="240" r="165" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="6" stroke-dasharray="12 8" />
+
+  <!-- Shield Badge -->
+  <path d="M 256 100 L 360 148 C 360 250 310 330 256 360 C 202 330 152 250 152 148 Z" 
+        fill="#064E3B" stroke="url(#goldGrad)" stroke-width="8" filter="url(#shadow)" />
+
+  <!-- Checkmark + Clock icon combination -->
+  <circle cx="256" cy="225" r="50" fill="#047857" stroke="#34D399" stroke-width="4" />
+  
+  <!-- Checkmark -->
+  <path d="M 235 225 L 250 240 L 280 210" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Text SITENANG -->
+  <text x="256" y="415" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="38" fill="#FFFFFF" letter-spacing="4">SITENANG</text>
+  <!-- Subtext KPU SUNGAI PENUH -->
+  <text x="256" y="445" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="16" fill="#FDE047" letter-spacing="2">KPU KOTA SUNGAI PENUH</text>
+</svg>
